@@ -1,0 +1,54 @@
+<launch>
+
+    <arg name="autorun" default="false"/>
+
+    <!-- HILTI Challenge -->
+    <!-- <arg  name="bag_file"  default="/media/tmn/mySataSSD2/DATASETS/HILTI2023/site1_handheld_1.bag"/> -->
+    <!-- <arg  name="bag_file"  default="/media/tmn/mySataSSD2/DATASETS/HILTI2023/site1_handheld_2.bag"/> -->
+    
+    <!-- <arg  name="bag_file" default="/media/tmn/mySataSSD2/DATASETS/HILTI2023/site2_robot_1.bag"/> -->
+    <arg  name="bag_file" default="/media/tmn/mySataSSD2/DATASETS/HILTI2023/site2_robot_2.bag"/>
+    
+    <arg name="config_file"  value="hilti2023_hhs"   if="$(eval 'handheld' in bag_file)" />
+    <arg name="config_file"  value="hilti2023_robot" if="$(eval 'robot' in bag_file)" />
+    
+    <arg name="convert_type" value="hesai"  if="$(eval 'handheld' in bag_file)" />
+    <arg name="convert_type" value="bpearl" if="$(eval 'robot' in bag_file)" />
+
+    <!-- <param name="/use_sim_time" value="true" /> -->
+
+    <!-- Directory to log the bundle files, pointclouds, and others-->
+    <arg name="exp_log_dir" default="/home/$(env USER)/fast_lio_logs/hilti2023"/>
+
+    <!-- Run the sensor converter -->
+    <node pkg="slict" type="slict_$(arg convert_type)_to_ouster" name="slict_$(arg convert_type)_to_ouster" 
+          respawn="true" output="screen" required="false">
+    </node>    
+
+    <rosparam command="load" file="$(find fast_lio)/config/$(arg config_file).yaml" />
+    <param name="feature_extract_enable" type="bool" value="1"/>
+    <param name="point_filter_num" type="int" value="4"/>
+    <param name="max_iteration" type="int" value="5" />
+    <param name="filter_size_surf" type="double" value="0.2" />
+    <param name="filter_size_map"  type="double" value="0.2" />
+    <param name="cube_side_length" type="double" value="1000" />
+    <param name="runtime_pos_log_enable" type="bool" value="0" />
+    <param name="exp_log_dir" type="string" value="$(arg exp_log_dir)" />
+    <node pkg="fast_lio" type="fastlio_mapping" name="laserMapping" output="screen"/>
+
+    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find fast_lio)/rviz_cfg/hilti2023.rviz">
+          <remap from="/alphasense/cam0/image_raw" to="/oak_cam_front/left/image_raw" if="$(eval 'robot' in bag_file)" />
+          <remap from="/alphasense/cam4/image_raw" to="/oak_cam_rear/left/image_raw" if="$(eval 'robot' in bag_file)" />
+    </node>
+
+    <node required="$(arg autorun)" pkg="rosbag" type="play" name="rosbag_player"
+          args="$(arg bag_file) -r 1.0 -s 0"
+          launch-prefix="bash -c 'sleep 1; $0 $@' "/>
+
+    <node pkg="tf2_ros" type="static_transform_publisher"
+          name="world_slam_init_pub" args="0 0 0 3.14159265359 0 0 world slam_init" if="$(eval 'handheld' in bag_file)" />  
+
+    <node pkg="tf2_ros" type="static_transform_publisher"
+          name="world_slam_init_pub" args="0 0 0 0 1.57079632679 0 world slam_init" if="$(eval 'robot' in bag_file)" />  
+
+</launch>

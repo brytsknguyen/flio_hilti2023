@@ -1,0 +1,42 @@
+common:
+    lid_topic: "/os_cloud_node/points"
+    imu_topic: "/alphasense/imu"
+    
+    time_sync_en: false             # ONLY turn on when external time synchronization is really not possible
+    time_offset_lidar_to_imu:  0.0  # Time offset between lidar and IMU calibrated by other algorithms, e.g. LI-Init (can be found in README).
+                                    # This param will take effect no matter what time_sync_en is. So if the time offset is not known exactly, please set as 0.0
+
+preprocess:
+    lidar_type:     3               # 1 for Livox serials LiDAR, 2 for Velodyne LiDAR, 3 for ouster LiDAR, 
+    scan_line:      32
+    timestamp_unit: 3               # 0-second, 1-milisecond, 2-microsecond, 3-nanosecond.
+    blind:          0.5
+
+mapping:
+
+    acc_cov:        0.01
+    gyr_cov:        0.001
+    b_acc_cov:      9.782812831313576e-07
+    b_gyr_cov:      2.6541629581345176e-05
+    fov_degree:     180
+    det_range:      150.0
+    extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
+    
+    extrinsic_T: [ -0.006730146149038548,
+                   -0.006897049862999071,
+                    0.049898628062256645, ]
+    extrinsic_R: [  0.006609639848469365, -0.9999773650294649,     0.0012578115132016717,
+                   -0.9999762249571927,   -0.006612093869054189,  -0.0019569708811106104,
+                    0.001965243352927244, -0.0012448467359610184, -0.9999972940839232  ]
+
+publish:
+    path_en:  false
+    scan_publish_en:  true       # false: close all the point cloud output
+    dense_publish_en: true       # false: low down the points number in a global-frame point clouds scan.
+    scan_bodyframe_pub_en: true  # true: output the point cloud scans in IMU-body-frame
+
+pcd_save:
+    pcd_save_en: true
+    interval: 50                 # how many LiDAR frames saved in each pcd file; 
+                                 # -1 : all frames will be saved in ONE pcd file, may lead to memory crash when having too much frames.
+exp_log_dir: "/home/tmn/fast_lio_logs"
